@@ -3,164 +3,165 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-public class SlotsMenu : MonoBehaviour
+namespace HKGameSave
 {
-
-    [Header("UI")]
-    [SerializeField] private Button _backButton;
-    [Header("Slots")]
-    [SerializeField] private Transform _layout;
-    [SerializeField] private GameObject _slotElement;
-    [SerializeField] private GameObject _noSlotsInfoObj;
-    [Header("Events")]
-    public UnityEvent<int> OnShowSlotCPopup;
-    public UnityEvent OnShowSaveLoadMenu;
-
-    private List<SlotData> _slotDatas = new List<SlotData>();
-
-    public class SlotData
+    public class SlotsMenu : MonoBehaviour
     {
-        public SlotElement Slot;
-        public UnityAction SlotAction;
+        [Header("UI")]
+        [SerializeField] private Button _backButton;
+        [Header("Slots")]
+        [SerializeField] private Transform _layout;
+        [SerializeField] private GameObject _slotElement;
+        [SerializeField] private GameObject _noSlotsInfoObj;
+        [Header("Events")]
+        public UnityEvent<int> OnShowSlotCPopup;
+        public UnityEvent OnShowSaveLoadMenu;
 
-        public SlotData(SlotElement slot, UnityAction action)
+        private List<SlotData> _slotDatas = new List<SlotData>();
+
+        public class SlotData
         {
-            Slot = slot;
-            SlotAction = action;
+            public SlotElement Slot;
+            public UnityAction SlotAction;
+
+            public SlotData(SlotElement slot, UnityAction action)
+            {
+                Slot = slot;
+                SlotAction = action;
+            }
         }
-    }
 
-    private void Start()
-    {
-        _backButton.onClick.AddListener(OnBackButtonClicked);
-    }
-
-    private void OnBackButtonClicked()
-    {
-        DestroyAndClear();
-        Hide();
-
-        OnShowSaveLoadMenu.Invoke();
-    }
-
-    public void UpdateSlots()
-    {
-        if (SaveSystem.GetAllSlotInfo().Length > 0)
+        private void Start()
         {
-            ShowSlots();
+            _backButton.onClick.AddListener(OnBackButtonClicked);
         }
-        else
+
+        private void OnBackButtonClicked()
+        {
+            DestroyAndClear();
+            Hide();
+
+            OnShowSaveLoadMenu.Invoke();
+        }
+
+        public void UpdateSlots()
+        {
+            if (SaveSystem.GetAllSlotInfo().Length > 0)
+            {
+                ShowSlots();
+            }
+            else
+            {
+                DestroyAndClear();
+
+                _noSlotsInfoObj.SetActive(true);
+                _backButton.Select();
+            }
+        }
+
+        public void ShowSlots()
+        {
+            SetupSlots();
+            Show();
+        }
+
+        private void SetupSlots()
         {
             DestroyAndClear();
 
-            _noSlotsInfoObj.SetActive(true);
-            _backButton.Select();
-        }
-    }
+            var slotInfos = SaveSystem.GetAllSlotInfo();
 
-    public void ShowSlots()
-    {
-        SetupSlots();
-        Show();
-    }
+            bool selected = false;
 
-    private void SetupSlots()
-    {
-        DestroyAndClear();
+            foreach (var slotInfo in slotInfos)
+            {
+                GameObject clonedSlotElement = Instantiate(_slotElement, _layout);
+                SlotElement slotElement = clonedSlotElement.GetComponent<SlotElement>();
 
-        var slotInfos = SaveSystem.GetAllSlotInfo();
+                slotElement.SetSlotElementData(slotInfo.slot, slotInfo.time.Value);
 
-        bool selected = false;
+                UnityAction action = () => OnSlotClicked(slotInfo.slot);
+                slotElement.SlotElementButton.onClick.AddListener(action);
 
-        foreach (var slotInfo in slotInfos)
-        {
-            GameObject clonedSlotElement = Instantiate(_slotElement, _layout);
-            SlotElement slotElement = clonedSlotElement.GetComponent<SlotElement>();
+                if (!selected)
+                {
+                    slotElement.SlotElementButton.Select();
 
-            slotElement.SetSlotElementData(slotInfo.slot, slotInfo.time.Value);
+                    selected = true;
+                }
 
-            UnityAction action = () => OnSlotClicked(slotInfo.slot);
-            slotElement.SlotElementButton.onClick.AddListener(action);
+                _slotDatas.Add(new SlotData(slotElement, action));
+            }
+
+            if (slotInfos.Length > 0)
+            {
+                _noSlotsInfoObj.SetActive(false);
+            }
+            else
+            {
+                _noSlotsInfoObj.SetActive(true);
+            }
 
             if (!selected)
             {
-                slotElement.SlotElementButton.Select();
+                _backButton.Select();
+            }
+        }
 
-                selected = true;
+        private void OnSlotClicked(int slotNumber)
+        {
+            bool success = SaveSystem.LoadInstant(slotNumber);
+
+            if (!success)
+            {
+                // Failed to load...
+                OnShowSlotCPopup.Invoke(slotNumber);
+
+                return;
             }
 
-            _slotDatas.Add(new SlotData(slotElement, action));
+            Hide();
+            DestroyAndClear();
+
+            OnShowSaveLoadMenu.Invoke();
         }
 
-        if (slotInfos.Length > 0)
+        private void DestroyAndClear()
         {
-            _noSlotsInfoObj.SetActive(false);
-        }
-        else
-        {
-            _noSlotsInfoObj.SetActive(true);
-        }
+            ResetButtonListeners();
 
-        if (!selected)
-        {
-            _backButton.Select();
-        }
-    }
-
-    private void OnSlotClicked(int slotNumber)
-    {
-        bool success = SaveSystem.LoadInstant(slotNumber);
-
-        if (!success)
-        {
-            // Failed to load...
-            //_slotPopup.Open(slotNumber);
-            OnShowSlotCPopup.Invoke(slotNumber);
-
-            return;
-        }
-
-        Hide();
-        DestroyAndClear();
-
-        OnShowSaveLoadMenu.Invoke();
-    }
-
-    private void DestroyAndClear()
-    {
-        ResetButtonListeners();
-
-        foreach (SlotData slotData in _slotDatas)
-        {
-            Destroy(slotData.Slot.gameObject);
-        }
-
-        _slotDatas.Clear();
-    }
-
-    private void OnDestroy()
-    {
-        ResetButtonListeners();
-    }
-
-    private void ResetButtonListeners()
-    {
-        for (int i = 0; i < _slotDatas.Count; i++)
-        {
-            if (_slotDatas.Count > i && _slotDatas[i] != null)
+            foreach (SlotData slotData in _slotDatas)
             {
-                _slotDatas[i].Slot.SlotElementButton.onClick.RemoveListener(_slotDatas[i].SlotAction);
-            }   
+                Destroy(slotData.Slot.gameObject);
+            }
+
+            _slotDatas.Clear();
         }
-    }
 
-    private void Show()
-    {
-        gameObject.SetActive(true);
-    }
+        private void OnDestroy()
+        {
+            ResetButtonListeners();
+        }
 
-    private void Hide()
-    {
-        gameObject.SetActive(false);
+        private void ResetButtonListeners()
+        {
+            for (int i = 0; i < _slotDatas.Count; i++)
+            {
+                if (_slotDatas.Count > i && _slotDatas[i] != null)
+                {
+                    _slotDatas[i].Slot.SlotElementButton.onClick.RemoveListener(_slotDatas[i].SlotAction);
+                }
+            }
+        }
+
+        private void Show()
+        {
+            gameObject.SetActive(true);
+        }
+
+        private void Hide()
+        {
+            gameObject.SetActive(false);
+        }
     }
 }

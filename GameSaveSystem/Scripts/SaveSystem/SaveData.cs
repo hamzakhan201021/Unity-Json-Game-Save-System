@@ -1,9 +1,7 @@
-public struct SaveData
+namespace HKGameSave
 {
-    public string TextValue;
-
-    public SaveData(string text)
+    public struct SaveData
     {
-        TextValue = text;
+        public string TextValue;
     }
 }

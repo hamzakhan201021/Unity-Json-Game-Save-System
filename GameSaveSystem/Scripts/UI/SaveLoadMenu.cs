@@ -3,94 +3,97 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.Events;
 
-public class SaveLoadMenu : MonoBehaviour
+namespace HKGameSave
 {
-    [Header("Save Testing UI")]
-    [SerializeField] private Button _saveButton;
-    [SerializeField] private Button _loadButton;
-    [SerializeField] private TMP_InputField _inputText;
-    [Header("Saving Options")]
-    [SerializeField] private bool _useAsync = true;
-    [Header("Debugging")]
-    [SerializeField] private bool _debugSlotInfo = true;
-    [SerializeField] private bool _logInfo = false;
-    [Header("Events")]
-    public UnityEvent OnShowSlots;
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public class SaveLoadMenu : MonoBehaviour
     {
-        _saveButton.onClick.AddListener(OnSaveButtonClicked);
-        _loadButton.onClick.AddListener(OnLoadButtonClicked);
+        [Header("Save Testing UI")]
+        [SerializeField] private Button _saveButton;
+        [SerializeField] private Button _loadButton;
+        [SerializeField] private TMP_InputField _inputText;
+        [Header("Saving Options")]
+        [SerializeField] private bool _useAsync = true;
+        [Header("Debugging")]
+        [SerializeField] private bool _debugSlotInfo = true;
+        [SerializeField] private bool _logInfo = false;
+        [Header("Events")]
+        public UnityEvent OnShowSlots;
 
-        SaveSystem.OnPrepareForSave.AddListener(PrepForSave);
-        SaveSystem.OnHandleLoad.AddListener(HandleNewData);
-    }
-
-    public void OnReShow()
-    {
-        _loadButton.Select();
-    }
-
-    private void Update()
-    {
-        if (_debugSlotInfo)
+        // Start is called once before the first execution of Update after the MonoBehaviour is created
+        void Start()
         {
-            SlotInfo();
+            _saveButton.onClick.AddListener(OnSaveButtonClicked);
+            _loadButton.onClick.AddListener(OnLoadButtonClicked);
+
+            SaveSystem.OnPrepareForSave.AddListener(PrepForSave);
+            SaveSystem.OnHandleLoad.AddListener(HandleNewData);
         }
-    }
 
-    private void OnSaveButtonClicked()
-    {
-        if (_useAsync)
+        public void OnReShow()
         {
-            SaveSystem.SaveAsyncNoAwait();
+            _loadButton.Select();
         }
-        else
+
+        private void Update()
         {
-            SaveSystem.SaveInstant();
-        }
-    }
-
-    private void OnLoadButtonClicked()
-    {
-        OnShowSlots.Invoke();
-    }
-
-    private void SlotInfo()
-    {
-        var slotInfo = SaveSystem.GetAllSlotInfo();
-
-        foreach (var (slot, time) in slotInfo)
-        {
-            if (time.HasValue)
+            if (_debugSlotInfo)
             {
-#if UNITY_EDITOR
-                if (_logInfo)
-                {
-                    Debug.Log($"Slot {slot}: Saved at {time.Value.ToLocalTime()}");
-                }
-#endif
+                SlotInfo();
+            }
+        }
+
+        private void OnSaveButtonClicked()
+        {
+            if (_useAsync)
+            {
+                SaveSystem.SaveAsyncNoAwait();
             }
             else
             {
-#if UNITY_EDITOR
-                if (_logInfo)
-                {
-                    Debug.Log($"Slot {slot}: [Empty]");
-                }
-#endif
+                SaveSystem.SaveInstant();
             }
         }
-    }
 
-    private void PrepForSave()
-    {
-        SaveSystem.SaveDataHolder.TextValue = _inputText.text;
-    }
+        private void OnLoadButtonClicked()
+        {
+            OnShowSlots.Invoke();
+        }
 
-    private void HandleNewData()
-    {
-        _inputText.text = SaveSystem.SaveDataHolder.TextValue;
+        private void SlotInfo()
+        {
+            var slotInfo = SaveSystem.GetAllSlotInfo();
+
+            foreach (var (slot, time) in slotInfo)
+            {
+                if (time.HasValue)
+                {
+#if UNITY_EDITOR
+                    if (_logInfo)
+                    {
+                        Debug.Log($"Slot {slot}: Saved at {time.Value.ToLocalTime()}");
+                    }
+#endif
+                }
+                else
+                {
+#if UNITY_EDITOR
+                    if (_logInfo)
+                    {
+                        Debug.Log($"Slot {slot}: [Empty]");
+                    }
+#endif
+                }
+            }
+        }
+
+        private void PrepForSave()
+        {
+            SaveSystem.SaveDataHolder.TextValue = _inputText.text;
+        }
+
+        private void HandleNewData()
+        {
+            _inputText.text = SaveSystem.SaveDataHolder.TextValue;
+        }
     }
 }

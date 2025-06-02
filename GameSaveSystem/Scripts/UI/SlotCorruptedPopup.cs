@@ -2,73 +2,76 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-public class SlotCorruptedPopup : MonoBehaviour
+namespace HKGameSave
 {
-    [Header("UI")]
-    [SerializeField] private Button _delete;
-    [SerializeField] private Button _selectAnother;
-    [Header("Events")]
-    public UnityEvent OnUpdateSlots;
-
-    private UnityAction _deleteAction;
-    private bool _deleteSub = false;
-
-    public void ShowPopup(int slotNum)
+    public class SlotCorruptedPopup : MonoBehaviour
     {
-        Show();
-        RemoveDeleteButtonSub();
+        [Header("UI")]
+        [SerializeField] private Button _delete;
+        [SerializeField] private Button _selectAnother;
+        [Header("Events")]
+        public UnityEvent OnUpdateSlots;
 
-        _deleteAction = () => OnDeleteClicked(slotNum);
-        _delete.onClick.AddListener(_deleteAction);
-        _selectAnother.onClick.AddListener(OnSelectAnotherClicked);
+        private UnityAction _deleteAction;
+        private bool _deleteSub = false;
 
-        _deleteSub = true;
-        _delete.Select();
-    }
-
-    private void OnDestroy()
-    {
-        Cleanup();
-    }
-
-    private void Cleanup()
-    {
-        _selectAnother.onClick.RemoveListener(OnSelectAnotherClicked);
-
-        RemoveDeleteButtonSub();
-    }
-
-    private void RemoveDeleteButtonSub()
-    {
-        if (_deleteSub)
+        public void ShowPopup(int slotNum)
         {
-            _delete.onClick.RemoveListener(_deleteAction);
+            Show();
+            RemoveDeleteButtonSub();
+
+            _deleteAction = () => OnDeleteClicked(slotNum);
+            _delete.onClick.AddListener(_deleteAction);
+            _selectAnother.onClick.AddListener(OnSelectAnotherClicked);
+
+            _deleteSub = true;
+            _delete.Select();
         }
-    }
 
-    private void OnDeleteClicked(int slotNumber)
-    {
-        SaveSystem.DeleteSlot(slotNumber);
+        private void OnDestroy()
+        {
+            Cleanup();
+        }
 
-        Hide();
+        private void Cleanup()
+        {
+            _selectAnother.onClick.RemoveListener(OnSelectAnotherClicked);
 
-        OnUpdateSlots.Invoke();
-    }
+            RemoveDeleteButtonSub();
+        }
 
-    private void OnSelectAnotherClicked()
-    {
-        Hide();
+        private void RemoveDeleteButtonSub()
+        {
+            if (_deleteSub)
+            {
+                _delete.onClick.RemoveListener(_deleteAction);
+            }
+        }
 
-        OnUpdateSlots.Invoke();
-    }
+        private void OnDeleteClicked(int slotNumber)
+        {
+            SaveSystem.DeleteSlot(slotNumber);
 
-    private void Show()
-    {
-        gameObject.SetActive(true);
-    }
+            Hide();
 
-    private void Hide()
-    {
-        gameObject.SetActive(false);
+            OnUpdateSlots.Invoke();
+        }
+
+        private void OnSelectAnotherClicked()
+        {
+            Hide();
+
+            OnUpdateSlots.Invoke();
+        }
+
+        private void Show()
+        {
+            gameObject.SetActive(true);
+        }
+
+        private void Hide()
+        {
+            gameObject.SetActive(false);
+        }
     }
 }
